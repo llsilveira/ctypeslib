@@ -137,7 +137,7 @@ class Generator(object):
             if isinstance(t.typ, typedesc.FundamentalType):
                 if t.typ.name in ('c_char', 'c_wchar'):
                     return "%s_p" % (self.FundamentalType(t.typ))
-                elif t.typ.name is "None":
+                elif t.typ.name == "None":
                     return "ctypes.c_void_p"
             return "ctypes.POINTER(%s)" % (self.type_name(t.typ, generate))
         elif isinstance(t, typedesc.FunctionType):
