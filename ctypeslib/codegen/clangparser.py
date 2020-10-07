@@ -59,10 +59,12 @@ class Clang_Parser(object):
 
     def __init__(self, flags):
         self.all = {}
+        self.parsed_files = set()
         self.cpp_data = {}
         self._unhandled = []
         self.fields = {}
         self.tu = None
+        self.tu_files = set()
         self.flags = flags
         self.ctypes_sizes = {}
         self.init_parsing_options()
@@ -104,6 +106,7 @@ class Clang_Parser(object):
         """
         index = Index.create()
         self.tu = index.parse(filename, self.flags, options=self.tu_options)
+        self.tu_files.clear()
         if not self.tu:
             log.warning("unable to load input")
             return
@@ -118,6 +121,7 @@ class Clang_Parser(object):
         root = self.tu.cursor
         for node in root.get_children():
             self.startElement(node)
+        self.parsed_files.update(self.tu_files)
         return
 
     def parse_string(self, inputdata):
@@ -139,13 +143,19 @@ class Clang_Parser(object):
         if node is None:
             return
 
-        if self.__filter_location is not None:
-            # dont even parse includes.
-            # FIXME: go back on dependencies ?
-            if node.location.file is None:
-                return
-            elif node.location.file.name not in self.__filter_location:
-                return
+        if node.location.file is None:
+            return
+        filename = node.location.file.name
+
+        # do not parse includes.
+        if self.__filter_location is not None and filename not in self.__filter_location:
+            return
+
+        # do not parse files more than once and store new files to update the set of parsed files later
+        if filename in self.parsed_files:
+            return
+        self.tu_files.add(filename)
+
         # find and call the handler for this element
         log.debug(
             '%s:%d: Found a %s|%s|%s',
