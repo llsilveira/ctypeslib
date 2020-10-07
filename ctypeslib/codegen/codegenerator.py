@@ -26,7 +26,8 @@ class Generator(object):
                  preloaded_dlls=None,
                  generate_docstrings=False,
                  generate_locations=False,
-                 generate_pointer_t=True):
+                 generate_pointer_t=True,
+                 rename_patterns=None):
         self.output = output
         self.stream = StringIO()
         self.imports = StringIO()
@@ -36,6 +37,7 @@ class Generator(object):
         self.generate_pointer_t = generate_pointer_t
         self.known_symbols = known_symbols or {}
         self.preloaded_dlls = preloaded_dlls or []
+        self.rename_patterns = rename_patterns
         if searched_dlls is None:
             self.searched_dlls = []
         else:
@@ -784,6 +786,24 @@ class Generator(object):
             print("# %s" % (l), file=self.stream)
         return
 
+    def rename_all(self):
+        if self.rename_patterns is None:
+            return
+
+        import re
+
+        for pattern in self.rename_patterns:
+            parts = pattern.partition(',')
+            regex = re.compile(parts[0])
+            sub = parts[2] or ""
+            new_names = set()
+            for name in self.names:
+                new_name = regex.sub(sub, name)
+                new_names.add(new_name)
+                if new_name != name:
+                    print("%s = %s" % (new_name, name), file=self.output)
+            self.names = new_names
+
     def generate_all(self, items):
         for item in items:
             self._generate(item)
@@ -826,6 +846,8 @@ class Generator(object):
         self.output.write(self.imports.getvalue())
         self.output.write("\n\n")
         self.output.write(self.stream.getvalue())
+
+        self.rename_all()
 
         text = "__all__ = \\"
         # text Wrapper doesn't work for the first line in certain cases.
@@ -877,6 +899,7 @@ def generate_code(srcfiles,
                   generate_locations=False,
                   filter_location=False,
                   generate_pointer_t=True,
+                  rename_patterns=[],
                   flags=None
                   ):
 
@@ -947,7 +970,8 @@ def generate_code(srcfiles,
                     generate_pointer_t=generate_pointer_t,
                     known_symbols=known_symbols,
                     searched_dlls=searched_dlls,
-                    preloaded_dlls=preloaded_dlls)
+                    preloaded_dlls=preloaded_dlls,
+                    rename_patterns=rename_patterns)
 
     # add some headers and ctypes import
     gen.generate_headers(parser)

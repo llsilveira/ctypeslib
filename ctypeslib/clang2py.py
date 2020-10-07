@@ -192,6 +192,14 @@ def main(argv=None):
                         action='store_true',
                         help="Use ctypes POINTER instead of the platform independent POINTER_T.")
 
+    parser.add_argument("--rename", dest="rename_patterns",
+                        action='append',
+                        help="Specify patterns to substitute generated names. Each pattern must be specified as two "
+                             "fields separated by a comma. The first field is a regex expresssion and the second is a "
+                             "text to substitute ocurrences of the regex on a name. E.G. --regex=\"foo,bar\". You can "
+                             "use this option more than once. Be sure that names will not conflict or unexpected "
+                             "behaviour can happen.")
+
     # recognize - as stdin
     # we do NOT support stdin
     parser.add_argument("files", nargs="+",
@@ -307,6 +315,7 @@ def main(argv=None):
                   searched_dlls=dlls,
                   preloaded_dlls=options.preload,
                   generate_pointer_t=not options.use_ctypes_pointer,
+                  rename_patterns=options.rename_patterns,
                   types=options.kind,
                   flags=clang_opts)
 
