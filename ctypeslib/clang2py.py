@@ -188,6 +188,10 @@ def main(argv=None):
                         type=int,
                         default=None)
 
+    parser.add_argument("--use-ctypes-pointer", dest="use_ctypes_pointer",
+                        action='store_true',
+                        help="Use ctypes POINTER instead of the platform independent POINTER_T.")
+
     # recognize - as stdin
     # we do NOT support stdin
     parser.add_argument("files", nargs="+",
@@ -302,6 +306,7 @@ def main(argv=None):
                   known_symbols=known_symbols,
                   searched_dlls=dlls,
                   preloaded_dlls=options.preload,
+                  generate_pointer_t=not options.use_ctypes_pointer,
                   types=options.kind,
                   flags=clang_opts)
 

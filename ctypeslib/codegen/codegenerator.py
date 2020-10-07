@@ -16,6 +16,7 @@ from ctypeslib.codegen import typedesc
 import logging
 log = logging.getLogger('codegen')
 
+
 class Generator(object):
 
     def __init__(self, output,
@@ -24,13 +25,15 @@ class Generator(object):
                  searched_dlls=None,
                  preloaded_dlls=None,
                  generate_docstrings=False,
-                 generate_locations=False):
+                 generate_locations=False,
+                 generate_pointer_t=True):
         self.output = output
         self.stream = StringIO()
         self.imports = StringIO()
         self.generate_locations = generate_locations
         self.generate_comments = generate_comments
         self.generate_docstrings = generate_docstrings
+        self.generate_pointer_t = generate_pointer_t
         self.known_symbols = known_symbols or {}
         self.preloaded_dlls = preloaded_dlls or []
         if searched_dlls is None:
@@ -124,8 +127,17 @@ class Generator(object):
         elif isinstance(t, typedesc.ArrayType):
             return "%s * %s" % (self.type_name(t.typ, generate), t.size)
         elif isinstance(t, typedesc.PointerType):
-            self.enable_pointer_type()
-            return "POINTER_T(%s)" % (self.type_name(t.typ, generate))
+            if self.generate_pointer_t:
+                self.enable_pointer_type()
+                return "POINTER_T(%s)" % (self.type_name(t.typ, generate))
+            if isinstance(t.typ, typedesc.FunctionType):
+                return self.type_name(t.typ, generate)
+            if isinstance(t.typ, typedesc.FundamentalType):
+                if t.typ.name in ('c_char', 'c_wchar'):
+                    return "%s_p" % (self.FundamentalType(t.typ))
+                elif t.typ.name is "None":
+                    return "ctypes.c_void_p"
+            return "ctypes.POINTER(%s)" % (self.type_name(t.typ, generate))
         elif isinstance(t, typedesc.FunctionType):
             args = [
                 self.type_name(
@@ -864,6 +876,7 @@ def generate_code(srcfiles,
                   generate_docstrings=False,
                   generate_locations=False,
                   filter_location=False,
+                  generate_pointer_t=True,
                   flags=None
                   ):
 
@@ -931,6 +944,7 @@ def generate_code(srcfiles,
                     generate_locations=generate_locations,
                     generate_comments=generate_comments,
                     generate_docstrings=generate_docstrings,
+                    generate_pointer_t=generate_pointer_t,
                     known_symbols=known_symbols,
                     searched_dlls=searched_dlls,
                     preloaded_dlls=preloaded_dlls)
