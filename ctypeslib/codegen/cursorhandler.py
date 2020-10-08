@@ -625,6 +625,8 @@ class CursorHandler(ClangHandler):
                 # just save the spot, don't look at members == None
                 log.debug('cursor %s is not on a definition', name)
                 obj = _output_type(name, align, None, bases, size, packed=False)
+                self.set_location(obj, cursor)
+                self.set_comment(obj, cursor)
                 return self.register(name, obj)
             else:
                 log.debug('cursor %s is a definition', name)
